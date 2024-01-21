@@ -4,6 +4,7 @@ mod cli;
 mod cnf;
 mod db;
 mod err;
+mod models;
 mod net;
 mod routes;
 

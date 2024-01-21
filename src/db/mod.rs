@@ -6,7 +6,8 @@ use once_cell::sync::OnceCell;
 pub static DS: OnceCell<Arc<Datastore>> = OnceCell::new();
 
 pub async fn init() -> anyhow::Result<()> {
-    let dbs = Datastore::new().await;
+    // let dbs = Datastore::new().await;
+    let dbs = Datastore::init("mint.db").await;
     let _ = DS.set(Arc::new(dbs));
     Ok(())
 }
