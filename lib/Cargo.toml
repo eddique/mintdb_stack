@@ -1,0 +1,10 @@
+[package]
+name = "mintdb-stack"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nalgebra = "0.32.3"
+serde = "1.0.195"
+serde_json = "1.0.111"
+tokio = { version = "1.35.1", features = ["full"] }
