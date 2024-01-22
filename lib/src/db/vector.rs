@@ -54,6 +54,7 @@ impl Datastore {
             let b_cosine = b.get("cosine").and_then(Value::as_f64).unwrap_or(0.0);
             b_cosine.partial_cmp(&a_cosine).unwrap()
         });
+        documents.truncate(3);
         documents
     }
 }

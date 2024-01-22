@@ -12,7 +12,6 @@ def insert(idx: str, id: str, title: str, content: str, link: str):
 
 def query(idx: str, content: str):
     embedding = embeddings.get_vector(content)
-    print("got embedding")
     data = {
         "idx": idx,
         "embedding": embedding

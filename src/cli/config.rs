@@ -13,6 +13,12 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { path: format!("mint.db"), user: Some(format!("mint.db")), pass: Some(format!("mint.db")), crt: None, key: None }
+        Config { 
+            path: format!("mint.db"), 
+            user: Some(format!("mint.db")), 
+            pass: Some(format!("mint.db")), 
+            crt: None, 
+            key: None 
+        }
     }
 }
