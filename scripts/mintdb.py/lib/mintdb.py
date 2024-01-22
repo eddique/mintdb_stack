@@ -1,5 +1,6 @@
 from lib import embeddings
 import requests
+import json
 
 def insert(idx: str, id: str, title: str, content: str, link: str):
     document = embeddings.create_document(id, title, content, link)
@@ -17,4 +18,4 @@ def query(idx: str, content: str):
         "embedding": embedding
     }
     res = requests.post("http://localhost:3000/dev/query", json=data).json()
-    print(res)
+    print(json.dumps(res, indent=2))
