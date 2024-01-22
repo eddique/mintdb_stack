@@ -17,29 +17,21 @@ impl Datastore {
                             Ok(v) => {
                                 let vector = DVector::from_vec(v);
                                 let title = doc.get("title").unwrap_or(&json!("default")).to_string();
-                                let cosine = math::cosine_similarity(&query_vector, &vector);
+                                let cosine_similarity = math::cosine_similarity(&query_vector, &vector);
                                 let manhattan_distance = math::manhattan_distance(&query_vector, &vector);
+                                let minkowski_distance = math::minkowski_distance(&query_vector, &vector, 3.0);
+                                let eucleidean_distance = math::euclidean_distance(&query_vector, &vector);
+                                let chebychev_distance = math::chebyshev_distance(&query_vector, &vector);
                                 let document = json!({
                                     "title": title,
-                                    "cosine": cosine,
+                                    "cosine_similarity": cosine_similarity,
                                     "manhattan_distance": manhattan_distance,
+                                    "minkowski_distance": minkowski_distance,
+                                    "eucleidean_distance": eucleidean_distance,
+                                    "manhattan_distance": manhattan_distance,
+                                    "chebychev_distance": chebychev_distance,
                                 });
                                 documents.push(document);
-                                println!(
-                                    "Document: {key}\n\
-                                    cosine_similarity: {}\n\
-                                    euclidean_distance: {}\n\
-                                    manhattan_distance: {}\n\
-                                    chebyshev_distance: {}\n\
-                                    minkowski_distance {}\n\
-                                    hamming_distance: {}\n",
-                                    math::cosine_similarity(&query_vector, &vector),
-                                    math::euclidean_distance(&query_vector, &vector),
-                                    math::manhattan_distance(&query_vector, &vector),
-                                    math::chebyshev_distance(&query_vector, &vector),
-                                    math::minkowski_distance(&query_vector, &vector, 3.0),
-                                    math::hamming_distance(&query_vector, &vector),
-                                );
                             }
                             Err(e) => {}
                         }
@@ -50,8 +42,8 @@ impl Datastore {
         }
         drop(lk);
         documents.sort_by(|a, b| {
-            let a_cosine = a.get("cosine").and_then(Value::as_f64).unwrap_or(0.0);
-            let b_cosine = b.get("cosine").and_then(Value::as_f64).unwrap_or(0.0);
+            let a_cosine = a.get("cosine_similarity").and_then(Value::as_f64).unwrap_or(0.0);
+            let b_cosine = b.get("cosine_similarity").and_then(Value::as_f64).unwrap_or(0.0);
             b_cosine.partial_cmp(&a_cosine).unwrap()
         });
         documents.truncate(3);
