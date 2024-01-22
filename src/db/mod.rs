@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use mintdb_stack::Datastore;
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 use crate::cli::CF;
-pub static DS: OnceCell<Arc<Datastore>> = OnceCell::new();
+pub static DS: OnceLock<Arc<Datastore>> = OnceLock::new();
 
 pub async fn init() -> anyhow::Result<()> {
     // let dbs = Datastore::new().await;
