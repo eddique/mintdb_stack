@@ -3,6 +3,26 @@ use crate::db;
 use crate::net;
 use clap::Args;
 
+pub async fn init(
+    StartCommandArgs { 
+        path, 
+        username, 
+        password, 
+        crt, 
+        key }: StartCommandArgs
+    ) -> anyhow::Result<()> {
+    let _ = CF.set(Config {
+        path,
+        username,
+        password,
+        crt,
+        key
+    });
+    db::init().await?;
+    net::init().await.unwrap();
+    Ok(())
+}
+
 #[derive(Args, Debug)]
 pub struct StartCommandArgs {
     #[arg(help = "Database path used for storing data")]
@@ -39,24 +59,4 @@ pub struct StartCommandArgs {
 		visible_alias = "key"
 	)]
 	key: Option<String>,
-}
-
-pub async fn init(
-    StartCommandArgs { 
-        path, 
-        username, 
-        password, 
-        crt, 
-        key }: StartCommandArgs
-    ) -> anyhow::Result<()> {
-    let _ = CF.set(Config {
-        path,
-        username,
-        password,
-        crt,
-        key
-    });
-    db::init().await?;
-    net::init().await.unwrap();
-    Ok(())
 }
