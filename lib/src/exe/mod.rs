@@ -29,20 +29,25 @@ impl Datastore {
                     let res = self.get(&sql.tb, &id).await;
                     return Ok(json!({"ok": true, "result": res}))
                 }
-
-                Ok(json!({"ok": false, "error": "id needed"}))
+                let res = self.get_many(&sql.tb).await?;
+                Ok(json!({"ok": true, "result": res}))
                 
             }
             Statement::Insert => {
                 if let Some(data) = &sql.data {
-                    self.insert(&sql.tb, data).await;
+                    if let Some(id) = &sql.doc {
+                        let res = self.merge(&sql.tb, id, data).await?;
+                        return Ok(json!({"ok": true, "result": res}))
+                    }
+                    let res = self.insert(&sql.tb, data).await;
+                    return Ok(json!({"ok": true, "result": res}))
                 }
-                Ok(json!({"ok": true}))
+                Ok(json!({"ok": false, "error": "no data provided"}))
             }
             Statement::Delete => {
                 if let Some(id) = &sql.doc {
-                    self.delete(&sql.tb, &id).await;
-                    return Ok(json!({"ok": true, "result": format!("{id} deleted")}));
+                    let res = self.delete(&sql.tb, &id).await?;
+                    return Ok(json!({"ok": true, "result": res}));
                 }
                 Ok(json!({"ok": false, "error": "id needed"}))
             }

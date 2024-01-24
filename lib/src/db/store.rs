@@ -1,6 +1,8 @@
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::{collections::BTreeMap, ops::Index, sync::Arc};
 use tokio::sync::RwLock;
+
+use crate::Result;
 
 pub type Collection = BTreeMap<String, Value>;
 pub type Collections = BTreeMap<String, Collection>;
@@ -34,7 +36,7 @@ impl Datastore {
         let mut lk = self.collections.write().await;
         lk.insert(name.to_string(), collection);
     }
-    pub async fn insert(&self, idx: &str, data: &Value) {
+    pub async fn insert(&self, idx: &str, data: &Value) -> Value {
         let mut id = String::new();
         if let Some(Value::String(_id)) = data.get("id") {
             id = _id.into();
@@ -45,33 +47,60 @@ impl Datastore {
         if let Some(collection) = lk.get_mut(idx) {
             collection.insert(format!("{idx}:{id}"), data.clone());
             drop(lk);
+
+            // TODO: if self.opt.path != "memory"
             self.write_document("mint.db", idx, &id, data.clone()).await;
+            data.clone()
         } else {
-            let collection = Collection::from([(format!("{idx}:1"), data.clone())]);
+            let collection = Collection::from([(format!("{idx}:{id}"), data.clone())]);
             lk.insert(idx.to_string(), collection);
+            data.clone()
         }
     }
-    pub async fn get(&self, idx: &str, id: &str) -> Option<Value> {
+    pub async fn get(&self, idx: &str, id: &str) -> Value {
         let lk = self.collections.read().await;
         if let Some(collection) = lk.get(idx) {
             if let Some(doc) = collection.get(&format!("{idx}:{id}")) {
-                return Some(doc.clone());
+                if let Some(mut doc) = doc.clone().as_object_mut() {
+                    let _ = doc.remove("embedding");
+                    return json!(doc);
+                }
+                return doc.clone();
             }
         }
-        None
+        Value::Null
+    }
+    pub async fn get_many(&self, idx: &str) -> Result<Vec<Value>> {
+        let lk = self.collections.read().await;
+        let mut results = vec![];
+        if let Some(tb) = lk.get(idx) {
+            for (key, value) in tb {
+                if let Some(mut doc) = value.clone().as_object_mut() {
+                    let _ = doc.remove("embedding");
+                    results.push(json!(doc));
+                    continue;
+                }
+                results.push(value.clone());
+            }
+        }
+        Ok(results)
     }
     pub async fn drop(&self, idx: &str) {
         let mut lk = self.collections.write().await;
         lk.remove(idx);
     }
-    pub async fn delete(&self, idx: &str, id: &str) {
+    pub async fn delete(&self, idx: &str, id: &str) -> Result<Value> {
         let mut lk = self.collections.write().await;
         if let Some(collection) = lk.get_mut(idx) {
-            collection.remove(id);
-            self.delete_document("mint.db", idx, id).await;
+            if let Some((key, entry)) = collection.remove_entry(id) {
+                return Ok(entry);
+                // TODO: if self.opts.path != "memory"
+                self.delete_document("mint.db", idx, id).await;
+            }
         }
+        Ok(Value::Null)
     }
-    pub async fn merge(&self, idx: &str, id: &str, data: Value) {
+    pub async fn merge(&self, idx: &str, id: &str, data: &Value) -> Result<Value> {
         let mut lk = self.collections.write().await;
         if let Some(collection) = lk.get_mut(idx) {
             if let Some(doc) = collection.get_mut(&format!("{idx}:{id}")) {
@@ -80,9 +109,11 @@ impl Datastore {
                         for (key, value) in data {
                             document.insert(key.to_string(), value.clone());
                         }
+                        return Ok(json!(document));
                     }
                 }
             }
         }
+        Ok(Value::Null)
     }
 }
