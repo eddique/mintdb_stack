@@ -18,7 +18,7 @@ async fn insert(
 ) -> net::Result<Json<Value>> {
     println!("@POST /dev/insert");
     let db = DS.get().unwrap();
-    db.insert(&req.idx, req.data).await;
+    db.insert(&req.idx, &req.data).await;
     Ok(Json(json!({
         "ok": true,
         "message": "document inserted"
@@ -30,7 +30,6 @@ async fn query_vectors(
 ) -> net::Result<Json<Value>> {
     println!("@POST /dev/query");
     let db = DS.get().unwrap();
-use nalgebra::DVector;
     let embedding = DVector::from_vec(req.embedding);
     let documents = db.query_vectors(&req.idx, &embedding).await;
     Ok(Json(json!({

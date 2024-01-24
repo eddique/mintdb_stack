@@ -35,7 +35,7 @@ impl Datastore {
                 file.read_to_end(&mut buffer).await.unwrap();
                 let doc: BTreeMap<String, Value> =
                     serde_cbor::from_slice(&buffer).unwrap_or_default();
-                self.insert(idx, json!(doc)).await;
+                self.insert(idx, &json!(doc)).await;
             }
         }
     }

@@ -34,7 +34,7 @@ impl Datastore {
         let mut lk = self.collections.write().await;
         lk.insert(name.to_string(), collection);
     }
-    pub async fn insert(&self, idx: &str, data: Value) {
+    pub async fn insert(&self, idx: &str, data: &Value) {
         let mut id = String::new();
         if let Some(Value::String(_id)) = data.get("id") {
             id = _id.into();
@@ -47,7 +47,7 @@ impl Datastore {
             drop(lk);
             self.write_document("mint.db", idx, &id, data.clone()).await;
         } else {
-            let collection = Collection::from([(format!("{idx}:1"), data)]);
+            let collection = Collection::from([(format!("{idx}:1"), data.clone())]);
             lk.insert(idx.to_string(), collection);
         }
     }

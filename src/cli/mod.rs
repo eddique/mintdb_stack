@@ -26,7 +26,7 @@ pub async fn init() -> anyhow::Result<()> {
 
     match cli.command {
         Commands::Start(args) => start::init(args).await?,
-        Commands::Repl(args) => repl::init(args)?,
+        Commands::Repl(args) => repl::init(args).await?,
     }
     Ok(())
 }
