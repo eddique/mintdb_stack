@@ -86,7 +86,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
         SQLCommands::Select(args) => {
             println!("args: {args:?}");
             SQL {
-                stmt: Statement::Insert,
+                stmt: Statement::Select,
                 tb: args.table,
                 doc: args.document,
                 data: None,
@@ -97,7 +97,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
         SQLCommands::Delete(args) => {
             println!("args: {args:?}");
             SQL {
-                stmt: Statement::Insert,
+                stmt: Statement::Delete,
                 tb: args.table,
                 doc: Some(args.document),
                 data: None,
