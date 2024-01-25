@@ -1,4 +1,4 @@
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::{collections::BTreeMap, ops::Index, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -7,9 +7,22 @@ use crate::Result;
 pub type Collection = BTreeMap<String, Value>;
 pub type Collections = BTreeMap<String, Collection>;
 
+#[derive(Clone, Debug)]
+struct Options {
+    path: String,
+}
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            path: format!("mint.db"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Datastore {
     pub collections: Arc<RwLock<Collections>>,
+    opt: Options,
 }
 
 impl Datastore {
@@ -18,8 +31,14 @@ impl Datastore {
     }
     pub async fn init(path: &str) -> Self {
         let db = Self::default();
-        db.read_dir(path).await;
+
+        if db.options().path != "memory" {
+            db.read_dir(path).await;
+        }
         db
+    }
+    fn options(&self) -> &Options {
+        &self.opt
     }
     pub async fn create_collections(&self, collections: &Vec<String>) {
         let mut lk = self.collections.write().await;
@@ -31,10 +50,11 @@ impl Datastore {
         }
         lk.extend(idxs);
     }
-    pub async fn create_collection(&self, name: &str) {
+    pub async fn create_collection(&self, name: &str) -> Result<Value> {
         let collection = Collection::new();
         let mut lk = self.collections.write().await;
         lk.insert(name.to_string(), collection);
+        Ok(json!({"name": name}))
     }
     pub async fn insert(&self, idx: &str, data: &Value) -> Value {
         let mut id = String::new();
@@ -45,11 +65,14 @@ impl Datastore {
         }
         let mut lk = self.collections.write().await;
         if let Some(collection) = lk.get_mut(idx) {
+            // TODO: Fix id setting/ getting
             collection.insert(format!("{idx}:{id}"), data.clone());
             drop(lk);
 
-            // TODO: if self.opt.path != "memory"
-            self.write_document("mint.db", idx, &id, data.clone()).await;
+            // TODO: use stateful pattern?
+            if self.opt.path != "memory" {
+                self.write_document("mint.db", idx, &id, data.clone()).await;
+            }
             data.clone()
         } else {
             let collection = Collection::from([(format!("{idx}:{id}"), data.clone())]);
@@ -60,6 +83,7 @@ impl Datastore {
     pub async fn get(&self, idx: &str, id: &str) -> Value {
         let lk = self.collections.read().await;
         if let Some(collection) = lk.get(idx) {
+            // TODO: Fix id setting/ getting
             if let Some(doc) = collection.get(&format!("{idx}:{id}")) {
                 if let Some(mut doc) = doc.clone().as_object_mut() {
                     let _ = doc.remove("embedding");
@@ -76,6 +100,7 @@ impl Datastore {
         if let Some(tb) = lk.get(idx) {
             for (key, value) in tb {
                 if let Some(mut doc) = value.clone().as_object_mut() {
+                    // TODO: Fix id setting/ getting
                     let _ = doc.remove("embedding");
                     results.push(json!(doc));
                     continue;
@@ -85,17 +110,22 @@ impl Datastore {
         }
         Ok(results)
     }
-    pub async fn drop(&self, idx: &str) {
+    pub async fn drop(&self, idx: &str) -> Result<Value> {
         let mut lk = self.collections.write().await;
-        lk.remove(idx);
+        if let Some((id, entry)) = lk.remove_entry(idx) {
+            return Ok(json!(id));
+        }
+        Ok(Value::Null)
     }
     pub async fn delete(&self, idx: &str, id: &str) -> Result<Value> {
         let mut lk = self.collections.write().await;
         if let Some(collection) = lk.get_mut(idx) {
             if let Some((key, entry)) = collection.remove_entry(id) {
                 return Ok(entry);
-                // TODO: if self.opts.path != "memory"
-                self.delete_document("mint.db", idx, id).await;
+                // TODO: use stateful pattern?
+                if self.opt.path != "memory" {
+                    self.delete_document("mint.db", idx, id).await;
+                }
             }
         }
         Ok(Value::Null)
@@ -103,6 +133,7 @@ impl Datastore {
     pub async fn merge(&self, idx: &str, id: &str, data: &Value) -> Result<Value> {
         let mut lk = self.collections.write().await;
         if let Some(collection) = lk.get_mut(idx) {
+            // TODO: Fix id setting/ getting
             if let Some(doc) = collection.get_mut(&format!("{idx}:{id}")) {
                 if let Some(document) = doc.as_object_mut() {
                     if let Some(data) = data.as_object() {

@@ -14,18 +14,15 @@ pub enum Error {
     
     #[error("Not found: {0}")]
     NotFound(String),
+
+    #[error("'{0}' required for execution")]
+    MissingKey(String),
     
     #[error("Not authorized: {0}")]
     NotAuthorized(String),
     
     #[error("Require Admin privileges for {0}")]
     RequireAdmin(String),
-
-    #[error("Error executing JS: {0}")]
-    JsExecution(String),
-
-    #[error("Error executing Python: {0}")]
-    PythonExecution(String),
     
     #[error(transparent)]
     EnvironmentVar(#[from] std::env::VarError),

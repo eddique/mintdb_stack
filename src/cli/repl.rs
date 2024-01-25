@@ -105,6 +105,26 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 embedding: None,
             }
         }
+        SQLCommands::Drop(args) => {
+            SQL {
+                stmt: Statement::Drop,
+                tb: args.table,
+                doc: None,
+                data: None,
+                query: None,
+                embedding: None,
+            }
+        }
+        SQLCommands::Migrate(args) => {
+            SQL {
+                stmt: Statement::Migrate,
+                tb: args.table,
+                doc: None,
+                data: None,
+                query: None,
+                embedding: None,
+            }
+        }
         SQLCommands::Quit => {
             println!("Shutting down.\x1b[38;5;50m Have a great day!\x1b[0m 😎");
             return Ok(true);
@@ -135,6 +155,8 @@ pub enum SQLCommands {
     Insert(InsertArgs),
     #[command()]
     Delete(DeleteArgs),
+    Drop(DropArgs),
+    Migrate(MigrateArgs),
     Quit,
     Ping,
 }
@@ -221,6 +243,19 @@ pub struct DeleteArgs {
     )]
     query: Option<Vec<String>>,
 }
+
+#[derive(Args, Debug)]
+pub struct DropArgs {
+    #[arg(short = 't', long = "table", visible_alias = "table")]
+    table: String,
+}
+
+#[derive(Args, Debug)]
+pub struct MigrateArgs {
+    #[arg(short = 't', long = "table", visible_alias = "table")]
+    table: String,
+}
+
 fn parse_json(s: &str) -> Result<Value, &'static str> {
     serde_json::from_str(s).map_err(|_| "Failed to parse JSON")
 }

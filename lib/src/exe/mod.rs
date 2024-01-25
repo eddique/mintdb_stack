@@ -2,13 +2,15 @@ use nalgebra::DVector;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use crate::{Datastore, Result};
+use crate::{Datastore, Result, err::Error};
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum Statement {
     Select,
     Insert,
     Delete,
+    Drop,
+    Migrate,
     Query,
 }
 
@@ -27,37 +29,41 @@ impl Datastore {
             Statement::Select => {
                 if let Some(id) = &sql.doc {
                     let res = self.get(&sql.tb, &id).await;
-                    return Ok(json!({"ok": true, "result": res}))
+                    return Ok(res);
                 }
                 let res = self.get_many(&sql.tb).await?;
-                Ok(json!({"ok": true, "result": res}))
+                Ok(json!(res))
                 
             }
             Statement::Insert => {
                 if let Some(data) = &sql.data {
                     if let Some(id) = &sql.doc {
-                        let res = self.merge(&sql.tb, id, data).await?;
-                        return Ok(json!({"ok": true, "result": res}))
+                        return self.merge(&sql.tb, id, data).await;
                     }
                     let res = self.insert(&sql.tb, data).await;
-                    return Ok(json!({"ok": true, "result": res}))
+                    return Ok(res)
                 }
-                Ok(json!({"ok": false, "error": "no data provided"}))
+                Err(Error::MissingKey(format!("data")))
             }
             Statement::Delete => {
                 if let Some(id) = &sql.doc {
-                    let res = self.delete(&sql.tb, &id).await?;
-                    return Ok(json!({"ok": true, "result": res}));
+                    return self.delete(&sql.tb, &id).await;
                 }
-                Ok(json!({"ok": false, "error": "id needed"}))
+                Err(Error::MissingKey(format!("doc")))
+            }
+            Statement::Drop => {
+                self.drop(&sql.tb).await
+            }
+            Statement::Migrate => {
+                self.create_collection(&sql.tb).await
             }
             Statement::Query => {
                 if let Some(emb) = &sql.embedding {
                     let embedding = DVector::from_vec(emb.clone());
                     let res = self.query_vectors(&sql.tb, &embedding).await;
-                    return Ok(json!({"ok": true, "results": res}));
+                    return Ok(json!(res));
                 }
-                Ok(json!({"ok": false, "error": "embedding needed"}))
+                Err(Error::MissingKey(format!("embedding")))
             }
         }
     }
