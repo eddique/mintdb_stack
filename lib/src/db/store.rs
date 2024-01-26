@@ -26,11 +26,14 @@ pub struct Datastore {
 }
 
 impl Datastore {
-    pub async fn new() -> Self {
-        Self::default()
+    pub fn new(path: &str) -> Self {
+        let opt = Options{
+            path: format!("{path}"),
+        };
+        Self { opt, ..Default::default()  }
     }
     pub async fn init(path: &str) -> Self {
-        let db = Self::default();
+        let db = Self::new(path);
 
         if db.options().path != "memory" {
             db.read_dir(path).await;
@@ -63,19 +66,25 @@ impl Datastore {
         } else {
             id = crate::uuid_v4!()
         }
+        let mut data = data.clone();
+        let data = if let Some(obj) = data.as_object_mut() {
+                obj.insert(format!("id"), json!(id));
+                json!(obj)
+        } else {
+            data
+        };
         let mut lk = self.collections.write().await;
         if let Some(collection) = lk.get_mut(idx) {
-            // TODO: Fix id setting/ getting
-            collection.insert(format!("{idx}:{id}"), data.clone());
+            collection.insert(format!("{id}"), data.clone());
             drop(lk);
 
             // TODO: use stateful pattern?
             if self.opt.path != "memory" {
-                self.write_document("mint.db", idx, &id, data.clone()).await;
+                self.write_document(&self.opt.path, idx, &id, data.clone()).await;
             }
             data.clone()
         } else {
-            let collection = Collection::from([(format!("{idx}:{id}"), data.clone())]);
+            let collection = Collection::from([(format!("{id}"), data.clone())]);
             lk.insert(idx.to_string(), collection);
             data.clone()
         }
@@ -84,7 +93,7 @@ impl Datastore {
         let lk = self.collections.read().await;
         if let Some(collection) = lk.get(idx) {
             // TODO: Fix id setting/ getting
-            if let Some(doc) = collection.get(&format!("{idx}:{id}")) {
+            if let Some(doc) = collection.get(&format!("{id}")) {
                 if let Some(mut doc) = doc.clone().as_object_mut() {
                     let _ = doc.remove("embedding");
                     return json!(doc);
@@ -102,6 +111,7 @@ impl Datastore {
                 if let Some(mut doc) = value.clone().as_object_mut() {
                     // TODO: Fix id setting/ getting
                     let _ = doc.remove("embedding");
+                    doc.insert(format!("id"), json!(key));
                     results.push(json!(doc));
                     continue;
                 }
@@ -124,7 +134,7 @@ impl Datastore {
                 return Ok(entry);
                 // TODO: use stateful pattern?
                 if self.opt.path != "memory" {
-                    self.delete_document("mint.db", idx, id).await;
+                    self.delete_document(&self.opt.path, idx, id).await;
                 }
             }
         }
@@ -133,8 +143,7 @@ impl Datastore {
     pub async fn merge(&self, idx: &str, id: &str, data: &Value) -> Result<Value> {
         let mut lk = self.collections.write().await;
         if let Some(collection) = lk.get_mut(idx) {
-            // TODO: Fix id setting/ getting
-            if let Some(doc) = collection.get_mut(&format!("{idx}:{id}")) {
+            if let Some(doc) = collection.get_mut(&format!("{id}")) {
                 if let Some(document) = doc.as_object_mut() {
                     if let Some(data) = data.as_object() {
                         for (key, value) in data {
