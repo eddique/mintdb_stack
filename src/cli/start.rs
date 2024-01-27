@@ -11,6 +11,8 @@ pub async fn init(
         crt, 
         key }: StartCommandArgs
     ) -> anyhow::Result<()> {
+		println!("path: {path}");
+		panic!("");
     let _ = CF.set(Config {
         path,
         username,
