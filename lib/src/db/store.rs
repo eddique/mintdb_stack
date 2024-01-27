@@ -2,7 +2,11 @@ use serde_json::{json, Value};
 use std::{collections::BTreeMap, ops::Index, sync::Arc};
 use tokio::sync::RwLock;
 
-use crate::Result;
+use crate::err::Error;
+use crate::{Result, exe::Filter};
+use crate::exe::parse_query;
+
+pub type Document = BTreeMap<String, Value>;
 
 pub type Collection = BTreeMap<String, Value>;
 pub type Collections = BTreeMap<String, Collection>;
@@ -86,7 +90,25 @@ impl Datastore {
         } else {
             let collection = Collection::from([(format!("{id}"), data.clone())]);
             lk.insert(idx.to_string(), collection);
+            if self.opt.path != "memory" {
+                self.write_document(&self.opt.path, idx, &id, data.clone()).await;
+            }
             data.clone()
+        }
+    }
+    pub async fn insert_key(&self, idx: &str, id: &str, key: &str, data: &Value) -> Result<Value> {
+        let mut lk = self.collections.write().await;
+        if let Some(tb) = lk.get_mut(idx) {
+            if let Some(doc) = tb.get_mut(id) {
+                doc.as_object_mut()
+                    .ok_or(Error::BadRequest(format!("invalid document type")))?
+                    .insert(key.into(), data.clone());
+                Ok(doc.clone())
+            } else {
+                Err(Error::NotFound(id.into()))
+            }
+        } else {
+            Err(Error::NotFound(idx.into()))
         }
     }
     pub async fn get(&self, idx: &str, id: &str) -> Value {
@@ -116,6 +138,41 @@ impl Datastore {
                     continue;
                 }
                 results.push(value.clone());
+            }
+        }
+        Ok(results)
+    }
+    pub async fn query(&self, idx: &str, query: &Vec<String>) -> Result<Vec<Value>> {
+        let mut filters = vec![];
+        for q in query {
+            match parse_query(q) {
+                Ok(filter) => {
+                    filters.push(filter);
+                }
+                Err(e) => {
+                    println!("{e}");
+                    continue;
+                }
+            }
+        }
+        let lk = self.collections.read().await;
+        let mut results = vec![];
+        if let Some(tb) = lk.get(idx) {
+            for (key, value) in tb {
+                if let Some(mut doc) = value.clone().as_object_mut() {
+                    let matches = filters.iter().any(|q| {
+                        if let Some(val) = doc.get(&q.lhs) {
+                            &q.rhs == val
+                        } else {
+                            false
+                         }
+                    });
+                    if matches {
+                        let _ = doc.remove("embedding");
+                        results.push(json!(doc));
+                        continue;
+                    }
+                }
             }
         }
         Ok(results)

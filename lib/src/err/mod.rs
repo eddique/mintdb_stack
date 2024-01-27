@@ -17,6 +17,9 @@ pub enum Error {
 
     #[error("'{0}' required for execution")]
     MissingKey(String),
+
+    #[error("'{0}' is an invalid operation")]
+    InvalidQuery(String),
     
     #[error("Not authorized: {0}")]
     NotAuthorized(String),

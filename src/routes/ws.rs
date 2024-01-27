@@ -1,5 +1,5 @@
 use std::net::SocketAddr;
-
+use std::ops::ControlFlow;
 use axum::{Router, Extension, Json};
 use axum::extract::{WebSocketUpgrade, ConnectInfo, Path};
 use axum::extract::ws::{WebSocket, Message};
@@ -7,8 +7,8 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post, delete};
 use axum_extra::TypedHeader;
 use axum_extra::headers::UserAgent;
-use futures::FutureExt;
-use futures_util::stream::StreamExt;
+use futures::{FutureExt, StreamExt};
+// use futures_util::stream::StreamExt;
 use serde_json::{json, Value};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
@@ -18,24 +18,31 @@ use crate::net::{Clients, Client};
 
 pub fn config() -> Router {
     Router::new()
-        .route("/", post(register_client))
+        .route("/", post(register))
         .route("/:id", delete(unregister))
         .route("/:id", get(websocket))
 
 }
 
-async fn websocket(
-    ws: WebSocketUpgrade,
-    user_agent: Option<TypedHeader<UserAgent>>,
-    Path(id): Path<String>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+async fn register(
     Extension(clients): Extension<Clients>
-) -> impl IntoResponse {
-    let client = clients.read().await.get(&id).cloned();
-    if let Some(c) = client {
-        ws.on_upgrade(move |socket| client_connection(socket, addr, id, c, clients));
-    }
+) -> net::Result<Json<Value>>{
+    let uid = mintdb_stack::uuid_v4!();
+    let url = format!("ws://localhost:3000/ws/{}", uid);
+    clients.write().await.insert(
+        format!("{uid}"),
+        Client {
+            uid,
+            topics: vec![],
+            sender: None,
+        },
+    );
+    Ok(Json(json!({
+        "ok": true,
+        "url": url,
+    })))
 }
+
 async fn unregister(
     Path(id): Path<String>,
     Extension(clients): Extension<Clients>
@@ -57,23 +64,18 @@ async fn unregister(
         }
     }
 }
-async fn register_client(
+
+async fn websocket(
+    ws: WebSocketUpgrade,
+    user_agent: Option<TypedHeader<UserAgent>>,
+    Path(id): Path<String>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Extension(clients): Extension<Clients>
-) -> net::Result<Json<Value>>{
-    let uid = mintdb_stack::uuid_v4!();
-    let url = format!("http://localhost:3000/ws/{}", uid);
-    clients.write().await.insert(
-        format!("{uid}"),
-        Client {
-            uid,
-            topics: vec![],
-            sender: None,
-        },
-    );
-    Ok(Json(json!({
-        "ok": true,
-        "url": url,
-    })))
+) -> impl IntoResponse {
+    let client = clients.read().await.get(&id).cloned();
+    if let Some(c) = client {
+        ws.on_upgrade(move |socket| client_connection(socket, addr, id, c, clients));
+    }
 }
 
 async fn client_connection(mut socket: WebSocket, addr: SocketAddr, id: String, mut client: Client, clients: Clients) {
@@ -86,11 +88,8 @@ async fn client_connection(mut socket: WebSocket, addr: SocketAddr, id: String, 
             println!("Error sending websocket message: {}", e);
         }
     }));
-
     client.sender = Some(c_tx);
-
     clients.write().await.insert(format!("{id}"), client);
-
     tracing::info!("{} connected", id);
 
     while let Some(result) = ws_rx.next().await {
@@ -108,20 +107,32 @@ async fn client_connection(mut socket: WebSocket, addr: SocketAddr, id: String, 
     tracing::info!("{} disconnected", id);
 }
 
-async fn client_msg(id: &str, msg: Message, clients: &Clients) {
+async fn client_msg(id: &str, msg: Message, clients: &Clients) -> ControlFlow<(), ()> {
     println!("received message from {}: {:?}", id, msg);
-    let message = match msg.to_text() {
-        Ok(val) => val,
-        Err(e) => {
-            tracing::error!("{e}");
-            return;
+    match msg {
+        Message::Text(txt) => {
+            println!("received message from {}: {}", id, txt);
+            // TODO: Handle topics request
         }
-    };
+        Message::Binary(bin) => {
+            println!("{} sent {} bytes: {:?}", id, bin.len(), bin);
+        }
+        Message::Ping(_) => {
+            println!("{} sent ping", id);
+        }
+        Message::Pong(_) => {
+            println!("{} sent pong", id);
 
-    if message == "ping" || message == "ping\n" {
-        return;
+        }
+        Message::Close(c) => {
+            if let Some(cf) = c {
+                println!("{} sent close with code {} and reason '{}'", id, cf.code, cf.reason);
+
+            }
+            return ControlFlow::Break(());
+        }
     }
+    ControlFlow::Continue(())
 
-    // TODO: Handle topics request
     
 }

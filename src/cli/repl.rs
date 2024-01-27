@@ -78,6 +78,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 stmt: Statement::Insert,
                 tb: args.table,
                 doc: args.id,
+                key: args.key,
                 data: Some(args.data),
                 query: args.query,
                 embedding: None,
@@ -89,6 +90,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 stmt: Statement::Select,
                 tb: args.table,
                 doc: args.document,
+                key: None,
                 data: None,
                 query: args.query,
                 embedding: None,
@@ -100,6 +102,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 stmt: Statement::Delete,
                 tb: args.table,
                 doc: Some(args.document),
+                key: None,
                 data: None,
                 query: args.query,
                 embedding: None,
@@ -110,6 +113,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 stmt: Statement::Drop,
                 tb: args.table,
                 doc: None,
+                key: None,
                 data: None,
                 query: None,
                 embedding: None,
@@ -120,6 +124,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 stmt: Statement::Migrate,
                 tb: args.table,
                 doc: None,
+                key: None,
                 data: None,
                 query: None,
                 embedding: None,
@@ -137,7 +142,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
     let db = DS.get().unwrap();
     match db.exec(&sql).await {
         Ok(res) => {
-            println!("{res}");
+            println!("{}", serde_json::to_string_pretty(&res)?);
         }
         Err(e) => {
             println!("{e}");
@@ -209,6 +214,8 @@ pub struct InsertArgs {
     table: String,
     #[arg(short = 'i', long = "id", visible_alias = "id")]
     id: Option<String>,
+    #[arg(short = 'k', long = "id", visible_alias = "id")]
+    key: Option<String>,
     #[arg(
 		short = 'd',
 		long = "data",
