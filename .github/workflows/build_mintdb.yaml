@@ -1,0 +1,31 @@
+name: Build MintDB Stack Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+          
+      - name: Build Lint
+        run: cargo clippy
+
+      - name: Build Docker image
+        run: |
+          docker build -t eddique/mintdb-stack .
+          docker tag eddique/mintdb-stack eddique/mintdb-stack:latest
+
+      - name: Push to DockerHub
+        run: |
+          echo ${{ secrets.DOCKER_ACCESS_TOKEN }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
+          docker push eddique/egpt-scim:latest
