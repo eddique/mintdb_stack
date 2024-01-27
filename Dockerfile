@@ -12,4 +12,4 @@ COPY --from=builder /app/target/release/mintdb-server /
 
 EXPOSE 3000
 
-ENTRYPOINT [ "mintdb-server" ]
+ENTRYPOINT [ "./mintdb-server" ]
