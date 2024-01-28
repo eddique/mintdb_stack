@@ -214,7 +214,7 @@ pub struct InsertArgs {
     table: String,
     #[arg(short = 'i', long = "id", visible_alias = "id")]
     id: Option<String>,
-    #[arg(short = 'k', long = "id", visible_alias = "id")]
+    #[arg(short = 'k', long = "key", visible_alias = "key")]
     key: Option<String>,
     #[arg(
 		short = 'd',

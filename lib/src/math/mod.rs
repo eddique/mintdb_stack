@@ -5,9 +5,14 @@ use nalgebra::DVector;
 pub(crate) fn cosine_similarity(a: &DVector<f64>, b: &DVector<f64>) -> f64 {
     a.dot(b) / (a.norm() * b.norm())
 }
+pub(crate)fn cosine_distance(a: &DVector<f64>, b: &DVector<f64>) -> f64 {
+    1.0 - cosine_similarity(a, b)
+}
+// L2 Distance
 pub(crate) fn euclidean_distance(a: &DVector<f64>, b: &DVector<f64>) -> f64 {
     (a - b).norm()
 }
+// L1 Distance
 pub(crate) fn manhattan_distance(a: &DVector<f64>, b: &DVector<f64>) -> f64 {
     (a - b).iter().map(|x| x.abs()).sum()
 }

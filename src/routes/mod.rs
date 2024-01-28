@@ -1,4 +1,5 @@
 mod dev;
+mod health;
 mod sql;
 mod ws;
 use axum::Router;

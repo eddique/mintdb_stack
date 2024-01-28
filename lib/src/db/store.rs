@@ -142,6 +142,11 @@ impl Datastore {
         }
         Ok(results)
     }
+    pub async fn get_collections(&self) -> Result<Vec<String>> {
+        let lk = self.collections.read().await;
+        let tbls: Vec<String> = lk.keys().cloned().collect();
+        Ok(tbls)
+    }
     pub async fn query(&self, idx: &str, query: &Vec<String>) -> Result<Vec<Value>> {
         let mut filters = vec![];
         for q in query {

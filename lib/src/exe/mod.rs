@@ -14,6 +14,7 @@ pub enum Statement {
     Drop,
     Migrate,
     Query,
+    Tables,
 }
 
 #[derive(Deserialize, Debug)]
@@ -74,6 +75,10 @@ impl Datastore {
                     return Ok(json!(res));
                 }
                 Err(Error::MissingKey(format!("embedding")))
+            }
+            Statement::Tables => {
+                let res = self.get_collections().await?;
+                Ok(json!(res))
             }
         }
     }
