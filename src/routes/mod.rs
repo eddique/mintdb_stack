@@ -9,4 +9,5 @@ pub fn init() -> Router {
         .nest("/dev", dev::config())
         .nest("/sql", sql::config())
         .nest("/ws", ws::config())
+        .nest("/health", health::config())
 }
