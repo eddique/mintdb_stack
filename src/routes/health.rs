@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 use crate::err::net;
 pub fn config() -> Router {
     Router::new()
-        .route("/health", get(health))
+        .route("/", get(health))
 }
 
 async fn health() -> net::Result<Json<Value>> {
