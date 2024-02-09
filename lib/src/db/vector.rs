@@ -16,27 +16,27 @@ impl Datastore {
                         match serde_json::from_value::<Vec<f64>>(embeddings.clone()) {
                             Ok(v) => {
                                 let vector = DVector::from_vec(v);
-                                let title = doc.get("title").unwrap_or(&json!("default")).to_string();
-                                let content = doc.get("content").unwrap_or(&json!("content")).to_string();
-                                let link = doc.get("link").unwrap_or(&json!("link")).to_string();
-                                let cosine_similarity = math::cosine_similarity(query_vector, &vector);
+                                let title = doc.get("title").unwrap_or(&json!("default")).clone();
+                                let content = doc.get("content").unwrap_or(&json!("content")).clone();
+                                let link = doc.get("link").unwrap_or(&json!("link")).clone();
+                                // let cosine_similarity = math::cosine_similarity(query_vector, &vector);
                                 let cosine_distance = math::cosine_distance(query_vector, &vector);
-                                let manhattan_distance = math::manhattan_distance(query_vector, &vector);
-                                let minkowski_distance = math::minkowski_distance(query_vector, &vector, 3.0);
-                                let eucleidean_distance = math::euclidean_distance(query_vector, &vector);
-                                let chebychev_distance = math::chebyshev_distance(query_vector, &vector);
+                                // let manhattan_distance = math::manhattan_distance(query_vector, &vector);
+                                // let minkowski_distance = math::minkowski_distance(query_vector, &vector, 3.0);
+                                // let eucleidean_distance = math::euclidean_distance(query_vector, &vector);
+                                // let chebychev_distance = math::chebyshev_distance(query_vector, &vector);
                                 let document = json!({
                                     "id": key,
                                     "title": title,
                                     "content": content,
                                     "link": link,
-                                    "cosine_similarity": cosine_similarity,
+                                    // "cosine_similarity": cosine_similarity,
                                     "cosine_distance": cosine_distance,
-                                    "manhattan_distance": manhattan_distance,
-                                    "minkowski_distance": minkowski_distance,
-                                    "eucleidean_distance": eucleidean_distance,
-                                    "manhattan_distance": manhattan_distance,
-                                    "chebychev_distance": chebychev_distance,
+                                    // "manhattan_distance": manhattan_distance,
+                                    // "minkowski_distance": minkowski_distance,
+                                    // "eucleidean_distance": eucleidean_distance,
+                                    // "manhattan_distance": manhattan_distance,
+                                    // "chebychev_distance": chebychev_distance,
                                 });
                                 documents.push(document);
                             }
@@ -53,7 +53,7 @@ impl Datastore {
             let b_cosine = b.get("cosine_distance").and_then(Value::as_f64).unwrap_or(0.0);
             a_cosine.partial_cmp(&b_cosine).unwrap()
         });
-        documents.truncate(3);
+        documents.truncate(10);
         documents
     }
 }

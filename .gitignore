@@ -4,3 +4,4 @@ env
 __pycache__
 mint.db
 docker-compose.yaml
+.DS_Store

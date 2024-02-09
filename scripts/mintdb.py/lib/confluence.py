@@ -39,7 +39,7 @@ def scrape_geekbot_knowledge_base(url, article_list=[], count=0):
             "id": id,
             "title": title,
             "content": plain_text,
-            "link": web_url,
+            "url": web_url,
         }
         article_list.append(data_object)
     if payload["_links"].get("next"):
