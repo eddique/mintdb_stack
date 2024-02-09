@@ -6,6 +6,13 @@ edition = "2021"
 [workspace]
 members = ["lib"]
 
+[profile.release]
+lto = true
+strip = true
+opt-level = 3
+panic = 'abort'
+codegen-units = 1
+
 [dependencies]
 anyhow = "1.0.79"
 axum = { version = "0.7.4", features = ["ws"] }
