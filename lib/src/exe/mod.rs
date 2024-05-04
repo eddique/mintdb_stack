@@ -15,6 +15,7 @@ pub enum Statement {
     Migrate,
     Query,
     Tables,
+    Count,
 }
 
 #[derive(Deserialize, Debug)]
@@ -80,6 +81,11 @@ impl Datastore {
                 let res = self.get_collections().await?;
                 Ok(json!(res))
             }
+            Statement::Count => {
+                let res = self.count(&sql.tb).await?;
+                Ok(json!(res))
+            }
+            
         }
     }
 }

@@ -218,4 +218,12 @@ impl Datastore {
         }
         Ok(Value::Null)
     }
+    pub async fn count(&self, idx: &str) -> Result<usize> {
+        let lk = self.collections.read().await;
+        if let Some(collection) = lk.get(idx) {
+            Ok(collection.len())
+        } else {
+            Ok(0)
+        }
+    }
 }

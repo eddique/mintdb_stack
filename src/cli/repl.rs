@@ -130,6 +130,17 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 embedding: None,
             }
         }
+        SQLCommands::Count(args) => {
+            SQL {
+                stmt: Statement::Count,
+                tb: args.table,
+                doc: None,
+                key: None,
+                data: None,
+                query: None,
+                embedding: None,
+            }
+        }
         SQLCommands::Quit => {
             println!("Shutting down.\x1b[38;5;50m Have a great day!\x1b[0m 😎");
             return Ok(true);
@@ -162,6 +173,7 @@ pub enum SQLCommands {
     Delete(DeleteArgs),
     Drop(DropArgs),
     Migrate(MigrateArgs),
+    Count(CountArgs),
     Quit,
     Ping,
 }
@@ -259,6 +271,12 @@ pub struct DropArgs {
 
 #[derive(Args, Debug)]
 pub struct MigrateArgs {
+    #[arg(short = 't', long = "table", visible_alias = "table")]
+    table: String,
+}
+
+#[derive(Args, Debug)]
+pub struct CountArgs {
     #[arg(short = 't', long = "table", visible_alias = "table")]
     table: String,
 }
