@@ -27,6 +27,7 @@ pub struct SQL {
     pub data: Option<Value>,
     pub query: Option<Vec<String>>,
     pub embedding: Option<Vec<f64>>,
+    pub top_n: Option<usize>,
 }
 impl Datastore {
     pub async fn exec(&self, sql: &SQL) -> Result<Value> {
@@ -71,8 +72,9 @@ impl Datastore {
             }
             Statement::Query => {
                 if let Some(emb) = &sql.embedding {
+                    let top_n: usize = sql.top_n.unwrap_or(5).into();
                     let embedding = DVector::from_vec(emb.clone());
-                    let res = self.query_vectors(&sql.tb, &embedding).await;
+                    let res = self.query_embeddings(&sql.tb, &embedding, top_n).await;
                     return Ok(json!(res));
                 }
                 Err(Error::MissingKey(format!("embedding")))

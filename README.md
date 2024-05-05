@@ -14,11 +14,11 @@
 # Getting started
 MintDB Stack Server
 ```sh
-mintdb-stack start --path mint.db
+mintdb-stack start path/to/data
 ```
 
 MintDB Stack Repl
 ```sh
-mintdb-stack repl --path mint.db
+mintdb-stack repl path/to/data
 ```
 

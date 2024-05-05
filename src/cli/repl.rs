@@ -82,6 +82,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 data: Some(args.data),
                 query: args.query,
                 embedding: None,
+                top_n: None,
             }
         }
         SQLCommands::Select(args) => {
@@ -94,6 +95,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 data: None,
                 query: args.query,
                 embedding: None,
+                top_n: None,
             }
         }
         SQLCommands::Delete(args) => {
@@ -106,6 +108,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 data: None,
                 query: args.query,
                 embedding: None,
+                top_n: None,
             }
         }
         SQLCommands::Drop(args) => {
@@ -117,6 +120,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 data: None,
                 query: None,
                 embedding: None,
+                top_n: None,
             }
         }
         SQLCommands::Migrate(args) => {
@@ -128,6 +132,7 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 data: None,
                 query: None,
                 embedding: None,
+                top_n: None,
             }
         }
         SQLCommands::Count(args) => {
@@ -139,6 +144,19 @@ async fn respond(line: &str) -> anyhow::Result<bool> {
                 data: None,
                 query: None,
                 embedding: None,
+                top_n: None,
+            }
+        }
+        SQLCommands::Query(args) => {
+            SQL {
+                stmt: Statement::Query,
+                tb: args.table,
+                doc: None,
+                key: None,
+                data: None,
+                query: None,
+                embedding: None,
+                top_n: Some(args.top_n),
             }
         }
         SQLCommands::Quit => {
@@ -174,6 +192,7 @@ pub enum SQLCommands {
     Drop(DropArgs),
     Migrate(MigrateArgs),
     Count(CountArgs),
+    Query(QueryArgs),
     Quit,
     Ping,
 }
@@ -279,6 +298,16 @@ pub struct MigrateArgs {
 pub struct CountArgs {
     #[arg(short = 't', long = "table", visible_alias = "table")]
     table: String,
+}
+
+#[derive(Args, Debug)]
+pub struct QueryArgs {
+    #[arg(short = 't', long = "table", visible_alias = "table")]
+    table: String,
+
+    #[arg(short = 'n', long = "top_n", visible_alias = "top_n")]
+    #[arg(default_value = "5")]
+    top_n: usize,
 }
 
 fn parse_json(s: &str) -> Result<Value, &'static str> {

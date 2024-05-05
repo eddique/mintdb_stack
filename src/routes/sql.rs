@@ -19,7 +19,8 @@ async fn query(
     let db = DS.get().unwrap();
     match db.exec(&sql).await {
         Ok(res) => {
-            tokio::spawn(publish(clients, format!("users:1:name"), res.to_string()));
+            let topic = format_topic(&sql);
+            tokio::spawn(publish(clients, topic, res.to_string()));
             Ok(Json(json!({
                 "ok": true,
                 "result": res,
@@ -45,4 +46,17 @@ async fn publish(clients: Clients, topic: String, message: String) {
                 let _ = sender.send(Ok(Message::Text(message.clone())));
             }
         });
+}
+
+fn format_topic(sql: &SQL) -> String {
+    let mut topic = sql.tb.to_string();
+    if let Some(doc) = &sql.doc {
+        topic += ":";
+        topic += doc;
+    }
+    if let Some(key) = &sql.key {
+        topic += ":";
+        topic += key;
+    }
+    format!("{}", topic)
 }
