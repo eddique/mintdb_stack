@@ -26,9 +26,12 @@ impl PartialEq for CosineDistance {
 
 impl Eq for CosineDistance {}
 
+// NOTE: Ordering reversed for binary min heap
+// -- other.cosine_distance.partial_cmp(&self.cosine_distance) 
+// ++ self.cosine_distance.partial_cmp(&other.cosine_distance)
 impl PartialOrd for CosineDistance {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        other.cosine_distance.partial_cmp(&self.cosine_distance)
+        self.cosine_distance.partial_cmp(&other.cosine_distance)
     }
 }
 
@@ -147,6 +150,7 @@ impl Datastore {
         while let Some(item) = heap.pop() {
             result.push(item.document);
         }
+        result.reverse();
         result
     }
 }
