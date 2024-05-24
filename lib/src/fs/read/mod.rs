@@ -11,8 +11,8 @@ impl Datastore {
         let mut collections = vec![];
         while let Some(entry) = entries.next_entry().await.unwrap() {
             match entry.file_name().into_string() {
-                Ok(name) if name.starts_with(".") => collections.push(name),
-                _ => continue,
+                Ok(name) => collections.push(name),
+                Err(_) => continue,
             }
         }
         for idx in collections {
