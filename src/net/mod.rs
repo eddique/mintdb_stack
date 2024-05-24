@@ -10,6 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::{Any, CorsLayer};
+use tokio::signal::unix::{signal, SignalKind};
 
 use crate::routes;
 
@@ -23,6 +24,11 @@ pub (crate) struct Client {
 }
 
 pub (crate) type Clients = Arc<RwLock<HashMap<String, Client>>>;
+
+async fn shutdown_signal() {
+    let mut stream = signal(SignalKind::interrupt()).unwrap();
+    stream.recv().await;
+}
 
 pub async fn init() -> std::result::Result<(), axum::BoxError> {
     let clients = Clients::default();
@@ -56,6 +62,11 @@ pub async fn init() -> std::result::Result<(), axum::BoxError> {
         "\x1b[38;5;50m...Started health check endpoint http://{}/health...\x1b[0m",
         &URI
     );
-    srv.await?;
+    let server = srv.with_graceful_shutdown(async {
+        shutdown_signal().await;
+        println!(  "\x1b[38;5;50m...Shutdown signal received...\x1b[0m");
+        println!(  "\x1b[38;5;50m...Gracefully shutting down...\x1b[0m");
+    });
+    server.await?;
     Ok(())
 }
