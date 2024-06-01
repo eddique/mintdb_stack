@@ -6,6 +6,9 @@ pub enum Error {
     #[error("io error: {0}")]
     IO(#[from] tokio::io::Error),
 
+    // #[error("io error: {0}")]
+    // IOERR(#[from] std::io::Error),
+
     #[error("Bad request: {0}")]
     BadRequest(String),
 
@@ -47,4 +50,7 @@ pub enum Error {
 
     #[error("from UTF-8 error: {0}")]
     UTF8(#[from] std::string::FromUtf8Error),
+
+    #[error("from UTF-8 error: {0}")]
+    CBOR(#[from] serde_cbor::error::Error),
 }

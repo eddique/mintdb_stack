@@ -29,6 +29,8 @@ pub async fn init(
         password,
         crt: None,
         key: None,
+        log: false,
+        log_level: None,
     });
     db::init().await?;
     repl().await?;

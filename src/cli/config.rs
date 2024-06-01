@@ -9,6 +9,8 @@ pub struct Config {
     pub password: Option<String>,
     pub crt: Option<String>,
     pub key: Option<String>,
+    pub log: bool,
+    pub log_level: Option<String>,
 }
 
 impl Default for Config {
@@ -18,7 +20,9 @@ impl Default for Config {
             username: Some(format!("mint.db")), 
             password: Some(format!("mint.db")), 
             crt: None, 
-            key: None 
+            key: None,
+            log: false,
+            log_level: None,
         }
     }
 }
