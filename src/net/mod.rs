@@ -10,7 +10,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use tower::ServiceBuilder;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::{Any, CorsLayer};
-use tokio::signal::unix::{signal, SignalKind};
+use tokio::signal::unix::{signal, Signal, SignalKind};
 
 use crate::routes;
 
@@ -26,8 +26,12 @@ pub (crate) struct Client {
 pub (crate) type Clients = Arc<RwLock<HashMap<String, Client>>>;
 
 async fn shutdown_signal() {
-    let mut stream = signal(SignalKind::interrupt()).unwrap();
-    stream.recv().await;
+    let mut interrupt = signal(SignalKind::interrupt()).unwrap();
+    let mut terminate = signal(SignalKind::terminate()).unwrap();
+    tokio::select! {
+        _ = interrupt.recv() => println!(  "\x1b[38;5;50m...Shutdown signal received...\x1b[0m"),
+        _ = terminate.recv() => println!(  "\x1b[38;5;50m...Terminate signal received...\x1b[0m"),
+    }
 }
 
 pub async fn init() -> std::result::Result<(), axum::BoxError> {
@@ -44,7 +48,6 @@ pub async fn init() -> std::result::Result<(), axum::BoxError> {
 
     let app = routes::init().layer(middleware_stack);
 
-    tracing::info!("server listening on {URI}");
     let listener = tokio::net::TcpListener::bind(&URI).await?;
     let srv = axum::serve(listener, app);
     println!("...Started web server on {}...", &URI);
@@ -64,7 +67,7 @@ pub async fn init() -> std::result::Result<(), axum::BoxError> {
     );
     let server = srv.with_graceful_shutdown(async {
         shutdown_signal().await;
-        println!(  "\x1b[38;5;50m...Shutdown signal received...\x1b[0m");
+        
         println!(  "\x1b[38;5;50m...Gracefully shutting down...\x1b[0m");
     });
     server.await?;

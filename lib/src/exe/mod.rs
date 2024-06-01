@@ -18,6 +18,22 @@ pub enum Statement {
     Count,
 }
 
+impl std::fmt::Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let output = match self {
+            Statement::Select => "SELECT",
+            Statement::Insert => "INSERT",
+            Statement::Delete => "DELETE",
+            Statement::Drop => "DROP",
+            Statement::Migrate => "MIGRATE",
+            Statement::Query => "QUERY",
+            Statement::Tables => "TABLES",
+            Statement::Count => "COUNT",
+        };
+        write!(f, "{}", output)
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct SQL {
     pub stmt: Statement,
@@ -53,8 +69,7 @@ impl Datastore {
                         }
                         return self.merge(&sql.tb, id, data).await;
                     }
-                    let res = self.insert(&sql.tb, data).await;
-                    return Ok(res)
+                    return self.insert(&sql.tb, data).await;
                 }
                 Err(Error::MissingKey(format!("data")))
             }

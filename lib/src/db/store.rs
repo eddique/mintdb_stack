@@ -63,7 +63,7 @@ impl Datastore {
         lk.insert(name.to_string(), collection);
         Ok(json!({"name": name}))
     }
-    pub async fn insert(&self, idx: &str, data: &Value) -> Value {
+    pub async fn insert(&self, idx: &str, data: &Value) -> Result<Value> {
         let mut id = String::new();
         if let Some(Value::String(_id)) = data.get("id") {
             id = _id.into();
@@ -84,16 +84,16 @@ impl Datastore {
 
             // TODO: use stateful pattern?
             if self.opt.path != "memory" {
-                self.write_document(&self.opt.path, idx, &id, data.clone()).await;
+                self.write_document(&self.opt.path, idx, &id, data.clone()).await?;
             }
-            data.clone()
+            Ok(data.clone())
         } else {
             let collection = Collection::from([(format!("{id}"), data.clone())]);
             lk.insert(idx.to_string(), collection);
             if self.opt.path != "memory" {
-                self.write_document(&self.opt.path, idx, &id, data.clone()).await;
+                self.write_document(&self.opt.path, idx, &id, data.clone()).await?;
             }
-            data.clone()
+            Ok(data.clone())
         }
     }
     pub async fn insert_key(&self, idx: &str, id: &str, key: &str, data: &Value) -> Result<Value> {
