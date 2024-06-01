@@ -58,7 +58,7 @@ pub struct StartCommandArgs {
     #[arg(short = 'k', long = "key", visible_alias = "key")]
     key: Option<String>,
 
-    #[arg(help = "Path used for storing log data")]
+    #[arg(help = "Boolean used for storing log data to file")]
 	#[arg(
         short = 'l',
         long = "log",
@@ -66,9 +66,9 @@ pub struct StartCommandArgs {
     )]
     log: bool,
 
-	#[arg(help = "Path used for storing log data")]
+	#[arg(help = "Log level for default")]
 	#[arg(
-        short = 'v',
+        short = 'L',
         long = "log-level",
         visible_alias = "log-level",
     )]
