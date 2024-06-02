@@ -43,6 +43,11 @@ volumes:
 helm repo add mintdb https://eddique.github.io/helm-mintdb-stack/
 helm install mintdb-stack mintdb/mintdb-stack
 ```
+
+### Stateful Set
+```sh
+cargo run -- start mint.db --log-level info --pod mintdb-0
+```
 ## API
 
 ### POST /sql

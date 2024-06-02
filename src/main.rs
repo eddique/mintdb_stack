@@ -8,6 +8,7 @@ mod log;
 mod models;
 mod net;
 mod routes;
+mod wal;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
