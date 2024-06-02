@@ -11,7 +11,6 @@ pub struct Config {
     pub key: Option<String>,
     pub log: bool,
     pub log_level: Option<String>,
-    pub wal: bool,
 }
 
 impl Default for Config {
@@ -24,7 +23,6 @@ impl Default for Config {
             key: None,
             log: false,
             log_level: None,
-            wal: false,
         }
     }
 }

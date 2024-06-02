@@ -31,7 +31,6 @@ pub async fn init(
         key: None,
         log: false,
         log_level: None,
-        wal: false,
     });
     db::init().await?;
     repl().await?;

@@ -1,11 +1,11 @@
 use std::{str::FromStr, fmt::format};
 
 use nalgebra::DVector;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{Value, json, to_string};
 
 use crate::{Datastore, Result, err::Error};
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum Statement {
     Select,
@@ -34,7 +34,7 @@ impl std::fmt::Display for Statement {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug)]
 pub struct SQL {
     pub stmt: Statement,
     pub tb: String,

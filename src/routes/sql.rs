@@ -6,7 +6,6 @@ use mintdb_stack::SQL;
 use crate::err::net;
 use crate::db::DS;
 use crate::net::Clients;
-use crate::wal;
 
 pub fn config() -> Router {
     Router::new()
@@ -23,7 +22,6 @@ async fn query(
         Ok(res) => {
             let topic = format_topic(&sql);
             tokio::spawn(publish(clients, topic, res.to_string()));
-            tokio::spawn(wal::write_to_wal(sql));
             Ok(Json(json!({
                 "ok": true,
                 "result": res,
