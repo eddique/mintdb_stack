@@ -17,14 +17,15 @@ pub async fn init() -> anyhow::Result<()> {
 pub async fn write_to_wal(entry: SQL) -> anyhow::Result<()> {
     let config = CF.get().unwrap();
     let path = format!("{}/wal/wal.log", &config.path);
-    tracing::info!("Writing {} {} to wal.log", &entry.stmt, &entry.tb);
     if config.wal {
         let json_str = match &entry.stmt {
             Statement::Insert => serde_json::to_string(&entry)?,
             Statement::Delete => serde_json::to_string(&entry)?,
             Statement::Drop => serde_json::to_string(&entry)?,
+            Statement::Batch => serde_json::to_string(&entry)?,
             _ => return Ok(()),
         };
+        tracing::info!("Writing {} {} to wal.log", &entry.stmt, &entry.tb);
         let mut file = match OpenOptions::new()
             .write(true)
             .create(true)

@@ -6,8 +6,8 @@ pub enum Error {
     #[error("io error: {0}")]
     IO(#[from] tokio::io::Error),
 
-    // #[error("io error: {0}")]
-    // IOERR(#[from] std::io::Error),
+    #[error("parse error: {0}")]
+    Parse(#[from] serde_json::Error),
 
     #[error("Bad request: {0}")]
     BadRequest(String),

@@ -1,10 +1,12 @@
-use std::{str::FromStr, fmt::format};
-
+use async_recursion::async_recursion;
+use futures::stream::FuturesOrdered;
+use futures::StreamExt;
 use nalgebra::DVector;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json, to_string};
+use serde_json::{json, to_string, Value};
+use std::{fmt::format, str::FromStr};
 
-use crate::{Datastore, Result, err::Error};
+use crate::{err::Error, Datastore, Result};
 #[derive(Deserialize, Debug, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Statement {
@@ -16,6 +18,7 @@ pub enum Statement {
     Query,
     Tables,
     Count,
+    Batch,
 }
 
 impl std::fmt::Display for Statement {
@@ -29,6 +32,7 @@ impl std::fmt::Display for Statement {
             Statement::Query => "QUERY",
             Statement::Tables => "TABLES",
             Statement::Count => "COUNT",
+            Statement::Batch => "BATCH",
         };
         write!(f, "{}", output)
     }
@@ -46,6 +50,7 @@ pub struct SQL {
     pub top_n: Option<usize>,
 }
 impl Datastore {
+    #[async_recursion]
     pub async fn exec(&self, sql: &SQL) -> Result<Value> {
         match sql.stmt {
             Statement::Select => {
@@ -55,11 +60,10 @@ impl Datastore {
                 }
                 if let Some(query) = &sql.query {
                     let res = self.query(&sql.tb, query).await?;
-                    return Ok(json!(res))
+                    return Ok(json!(res));
                 }
                 let res = self.get_many(&sql.tb).await?;
                 Ok(json!(res))
-                
             }
             Statement::Insert => {
                 if let Some(data) = &sql.data {
@@ -79,12 +83,8 @@ impl Datastore {
                 }
                 Err(Error::MissingKey(format!("doc")))
             }
-            Statement::Drop => {
-                self.drop(&sql.tb).await
-            }
-            Statement::Migrate => {
-                self.create_collection(&sql.tb).await
-            }
+            Statement::Drop => self.drop(&sql.tb).await,
+            Statement::Migrate => self.create_collection(&sql.tb).await,
             Statement::Query => {
                 if let Some(emb) = &sql.embedding {
                     let top_n: usize = sql.top_n.unwrap_or(5).into();
@@ -102,7 +102,38 @@ impl Datastore {
                 let res = self.count(&sql.tb).await?;
                 Ok(json!(res))
             }
-            
+            Statement::Batch => {
+                if let Some(data) = &sql.data {
+                    if data.is_array() {
+                        let stmts: Vec<SQL> = serde_json::from_value(data.clone())?;
+                        let futures: Vec<_> = stmts.iter().map(|stmt| async {
+                            let log = match self.exec(stmt).await {
+                                Ok(v) => {
+                                    format!("OK - {} {}", &stmt.stmt, &stmt.tb)
+                                }
+                                Err(e) => {
+                                    format!("ERROR - {} {} log: {}", &stmt.stmt, &stmt.tb, e.to_string())
+                                }
+                            };
+                            json!(log)
+                        }).collect();
+                        let mut stream = FuturesOrdered::new();
+                        for future in futures {
+                            stream.push_back(future);
+                        }
+
+                        let results: Vec<_> = stream.collect().await;
+
+                        Ok(json!(results))
+                    } else {
+                        Err(Error::BadRequest(format!(
+                            "data key must be and array of sql statements"
+                        )))
+                    }
+                } else {
+                    Err(Error::MissingKey(format!("data")))
+                }
+            }
         }
     }
 }
@@ -155,9 +186,7 @@ pub fn parse_query(query: &str) -> Result<Filter> {
     let parts: Vec<&str> = query.split_whitespace().collect();
     let key = parts.first().unwrap_or(&"");
     let op_str = parts.get(1).unwrap_or(&"unknown");
-    let rhs = query.split(op_str)
-        .last()
-        .unwrap_or("default");
+    let rhs = query.split(op_str).last().unwrap_or("default");
     let rhs = rhs.trim();
     println!("{rhs}");
     match Operation::from_str(op_str) {
@@ -169,7 +198,7 @@ pub fn parse_query(query: &str) -> Result<Filter> {
             };
             Ok(filter)
         }
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 

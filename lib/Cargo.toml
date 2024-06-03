@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+async-recursion = "1.1.1"
 base64 = "0.21.7"
+futures = "0.3"
 nalgebra = "0.32.3"
 ring = "0.17.7"
 serde = "1.0.195"
