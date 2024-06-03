@@ -187,6 +187,9 @@ impl Datastore {
         if let Some((id, entry)) = lk.remove_entry(idx) {
             return Ok(json!(id));
         }
+        if self.opt.path != "memory" {
+            self.delete_table(&self.opt.path, idx).await?;
+        }
         Ok(Value::Null)
     }
     pub async fn delete(&self, idx: &str, id: &str) -> Result<Value> {
