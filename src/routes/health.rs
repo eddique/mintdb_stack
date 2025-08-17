@@ -12,7 +12,7 @@ pub fn config() -> Router {
 
 async fn health() -> net::Result<Json<Value>> {
     tracing::info!("@GET /health");
-    tokio::task::spawn(wal::flush_wal());
+    // tokio::task::spawn(wal::flush_wal());
     Ok(Json(json!({
         "ok": true,
     })))
